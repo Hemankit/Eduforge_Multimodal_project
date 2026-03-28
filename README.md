@@ -5,7 +5,7 @@ colorFrom: pink
 colorTo: blue
 sdk: docker
 pinned: false
-short_description: Multimodal educational content generator with LLM provider switching
+short_description: Multimodal AI content generator with LLM switching
 ---
 
 # 🎓 EduForge - Multimodal Educational Content Generator
