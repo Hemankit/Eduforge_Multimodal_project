@@ -6,47 +6,77 @@ Generate high-quality educational content with AI: slides, diagrams, and audio n
 
 ## 🚀 Quick Start
 
-This Space uses **Llama 3.3 70B** via Together AI for content generation.
+This Space uses **Llama 3.3 70B** via Together AI. **You provide your own API key** in each request - we don't store or charge you!
 
-### Set Your API Key
+### Get Your API Key
 
-1. Go to **Settings → Repository secrets**
-2. Add: `TOGETHER_API_KEY` with your [Together AI key](https://api.together.xyz/)
-3. Free tier includes $25 credit!
+1. Sign up at [Together AI](https://api.together.xyz/)
+2. Get free $25 credit
+3. Copy your API key
 
 ### Generate Content
 
 ```bash
-curl -X POST "https://YOUR_USERNAME-eduforge.hf.space/generate" \
+curl -X POST "https://heman20-eduforge.hf.space/generate" \
   -H "Content-Type: application/json" \
   -d '{
     "topic": "Binary Search Algorithm",
     "audience": "beginner",
     "max_duration_sec": 180,
-    "render_formats": ["slides", "diagrams"]
+    "render_formats": ["slides", "diagrams"],
+    "llm_provider": "together",
+    "together_api_key": "YOUR_API_KEY_HERE"
+  }'
+```
+
+### Try Local Model (No API Key!)
+
+For lighter workloads, use the local Mistral 7B model:
+
+```bash
+curl -X POST "https://heman20-eduforge.hf.space/generate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Python Lists",
+    "audience": "beginner",
+    "llm_provider": "local"
   }'
 ```
 
 ## 📚 Features
 
-- **🧠 AI-Powered**: Llama 3.3 70B (128K context)
+- **🧠 Bring Your Own Key**: You control your API usage and billing
+- **🎯 Two Modes**: Local (Mistral 7B, free) or API (Llama 3.3 70B, paid)
 - **📊 Multi-Modal**: Slides + Diagrams + Audio
 - **✅ Validated**: Schema-based output consistency  
 - **🔄 RESTful API**: Easy integration
-- **💰 Affordable**: ~$0.88 per 1M tokens
+- **💰 Affordable**: ~$0.88 per 1M tokens (Together AI)
 
 ## 🛠️ API Endpoints
 
 ### `POST /generate`
 Generate educational content from a topic.
 
-**Request:**
+**Request Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `topic` | string | ✅ | Topic to generate content about |
+| `audience` | string | No | `beginner`, `intermediate`, or `advanced` (default: `beginner`) |
+| `max_duration_sec` | int | No | Target duration in seconds (default: 180) |
+| `render_formats` | array | No | `["slides", "diagrams", "audio"]` (default: `["slides", "diagrams"]`) |
+| `llm_provider` | string | No | `"local"` or `"together"` (default: `"together"`) |
+| `together_api_key` | string | ⚠️ | **Required if `llm_provider="together"`** |
+
+**Request Example:**
 ```json
 {
   "topic": "Quantum Computing Basics",
   "audience": "intermediate",
   "max_duration_sec": 240,
-  "render_formats": ["slides", "diagrams", "audio"]
+  "render_formats": ["slides", "diagrams"],
+  "llm_provider": "together",
+  "together_api_key": "YOUR_API_KEY_HERE"
 }
 ```
 
@@ -57,7 +87,8 @@ Generate educational content from a topic.
   "generated_files": {
     "slides": "/outputs/20260328_120000/slides.html",
     "diagrams": ["/outputs/20260328_120000/diagram_00.svg"]
-  }
+  },
+  "generation_time_sec": 15.3
 }
 ```
 
@@ -69,24 +100,46 @@ Download generated files.
 
 ## 🔧 Configuration
 
-### Environment Variables (Set in Space Settings)
+**No Space-level configuration needed!** Users provide their own API keys in requests.
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `TOGETHER_API_KEY` | ✅ Yes | - | Together AI API key |
-| `LLM_PROVIDER` | No | `together` | Use `together` for best quality |
+This approach means:
+- ✅ **Free for you**: No API bills for the Space owner
+- ✅ **Private**: Each user's key is only used for their requests
+- ✅ **Flexible**: Users can switch between local and API modes anytime
 
 ## 💡 Examples
 
-### Beginner Tutorial
+### Option 1: Together AI (High Quality)
+
+Requires your Together AI API key from https://api.together.xyz/
+
 ```json
 {
   "topic": "Introduction to Variables in Python",
   "audience": "beginner",
   "max_duration_sec": 120,
-  "example_count": 3
+  "example_count": 3,
+  "llm_provider": "together",
+  "together_api_key": "your_key_here"
 }
 ```
+
+**Cost**: ~$0.01-0.05 per generation (depending on content length)
+
+### Option 2: Local Mistral 7B (Free)
+
+No API key needed! Uses the Space's built-in model.
+
+```json
+{
+  "topic": "Python Lists Basics",
+  "audience": "beginner",
+  "max_duration_sec": 120,
+  "llm_provider": "local"
+}
+```
+
+**Cost**: $0 (slower, but free!)
 
 ### Advanced Deep Dive
 ```json
@@ -94,7 +147,9 @@ Download generated files.
   "topic": "Understanding Backpropagation in Neural Networks",
   "audience": "advanced",
   "max_duration_sec": 300,
-  "render_formats": ["slides", "diagrams"]
+  "render_formats": ["slides", "diagrams"],
+  "llm_provider": "together",
+  "together_api_key": "your_key_here"
 }
 ```
 

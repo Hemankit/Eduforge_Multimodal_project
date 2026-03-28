@@ -107,12 +107,11 @@ docker logs -f eduforge
 
 ### Option 3: Hugging Face Spaces (Cloud Deployment)
 
-This Space is configured to use **Together AI** (Llama 3.3 70B) by default.
+**Users provide their own API keys** - no billing for the Space owner!
 
-**Required Configuration:**
-1. Go to Space Settings → Repository secrets
-2. Add: `TOGETHER_API_KEY` with your Together AI API key
-3. The Space will automatically use the API provider
+This Space supports two modes:
+- **Together AI** (Llama 3.3 70B): Users provide API key in request
+- **Local** (Mistral 7B): Free, no key needed
 
 See [README_HF.md](README_HF.md) for detailed HF Spaces deployment guide.
 
@@ -130,7 +129,9 @@ See [README_HF.md](README_HF.md) for detailed HF Spaces deployment guide.
 
 ## 📖 Usage
 
-Send a POST request to generate educational content:
+### Local Provider (Free)
+
+Use the built-in Mistral 7B model:
 
 ```bash
 curl -X POST http://localhost:8000/generate \
@@ -138,8 +139,27 @@ curl -X POST http://localhost:8000/generate \
   -d '{
     "topic": "Binary Search Algorithm",
     "audience": "beginner",
-    "render_formats": ["slides", "diagrams", "audio"]
+    "render_formats": ["slides", "diagrams"],
+    "llm_provider": "local"
   }'
 ```
+
+### Together AI Provider (High Quality)
+
+Provide your API key in the request:
+
+```bash
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Neural Networks Fundamentals",
+    "audience": "intermediate",
+    "render_formats": ["slides", "diagrams", "audio"],
+    "llm_provider": "together",
+    "together_api_key": "YOUR_API_KEY_HERE"
+  }'
+```
+
+**Get your key**: https://api.together.xyz/ (free $25 credit)
 
 Outputs are saved to `generated_outputs/SESSION_ID/`.

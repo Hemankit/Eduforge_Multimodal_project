@@ -66,6 +66,8 @@ class GenerateRequest(BaseModel):
     slide_format: str = "html"
     optimize_for_format: bool = True
     include_few_shot: bool = False
+    llm_provider: str = "together"  # "local" or "together"
+    together_api_key: Optional[str] = None  # User's Together AI API key (required if provider=together)
     
     class Config:
         json_schema_extra = {
@@ -76,7 +78,9 @@ class GenerateRequest(BaseModel):
                 "example_count": 2,
                 "render_formats": ["slides", "diagrams", "audio"],
                 "optimize_for_format": True,
-                "include_few_shot": False
+                "include_few_shot": False,
+                "llm_provider": "together",
+                "together_api_key": "your_together_api_key_here"
             }
         }
 
@@ -143,10 +147,13 @@ async def generate_content(request: GenerateRequest):
     """
     Generate educational content with multimodal outputs.
     
+    Users provide their own Together AI API key to avoid billing the deployment owner.
+    Supports both local (Mistral 7B) and API (Llama 3.3 70B) inference.
+    
     This endpoint:
-    1. Validates input
+    1. Validates input and API key
     2. Builds prompt with schema injection
-    3. Generates content using LLM
+    3. Generates content using user's LLM provider
     4. Validates output
     5. Renders media files (slides, diagrams, audio)
     6. Returns content + file paths
@@ -173,22 +180,37 @@ async def generate_content(request: GenerateRequest):
         prompt = build_prompt(content_input, include_few_shot=request.include_few_shot)
         logger.info(f"Prompt built: {len(prompt)} characters")
         
-        # Step 3: Load LLM and generate content
+        # Step 3: Validate API key for Together AI provider
+        if request.llm_provider == "together" and not request.together_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="together_api_key is required when llm_provider='together'. "
+                       "Get your free key at https://api.together.xyz/"
+            )
+        
+        # Step 4: Create LLM client with user's API key
+        logger.info(f"Creating LLM client with provider: {request.llm_provider}")
+        client = LLMClient.create(
+            provider=request.llm_provider,
+            api_key=request.together_api_key,
+            fallback_to_local=False  # No fallback - use what user specified
+        )
+        
+        # Step 5: Generate content with LLM
         logger.info("Generating content with LLM...")
-        client = get_llm_client()
         generator = ContentGenerator(llm_client=client, valid_input=content_input, prompt=prompt)
         
         # Generate with repair loop
         content_output = generator.generate_with_repair()
         logger.info(f"✅ Content generated: {len(content_output.sections)} sections")
         
-        # Step 4: Cross-validation
+        # Step 6: Cross-validation
         logger.info("Running cross-validation...")
         is_valid, errors = CrossValidator.validate(content_input, content_output)
         if not is_valid:
             logger.warning(f"Validation errors: {errors}")
         
-        # Step 5: Render media files
+        # Step 7: Render media files
         logger.info("Rendering media files...")
         generated_files = {}
         

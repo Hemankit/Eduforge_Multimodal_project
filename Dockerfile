@@ -32,9 +32,8 @@ ENV PORT=7860
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 
-# Default to Together AI for better quality (users can override with Space secrets)
-# Set TOGETHER_API_KEY in Hugging Face Space settings
-ENV LLM_PROVIDER=together
+# No API key required at deployment level!
+# Users provide their own API keys in requests to avoid billing the Space owner
 
 # Expose the port that Hugging Face Spaces expects
 EXPOSE 7860
