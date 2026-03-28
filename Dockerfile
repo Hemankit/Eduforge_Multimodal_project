@@ -1,4 +1,5 @@
 # Dockerfile for Hugging Face Spaces deployment
+# Updated: 2026-03-28 - Force rebuild to fix module import
 FROM python:3.10-slim
 
 # Set working directory
@@ -23,6 +24,9 @@ RUN pip install --no-cache-dir langchain-together>=0.1.0
 
 # Copy application code
 COPY . .
+
+# Debug: List Python files to verify they're copied
+RUN echo "=== Python files in /app ===" && ls -la *.py && echo "=== Done ===" 
 
 # Create necessary directories
 RUN mkdir -p generated_outputs
