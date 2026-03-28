@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Slide Deck</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --slide-bg: #ffffff;
+      --fg: #111;
+      --muted: #666;
+      --pad: 56px;
+      --radius: 14px;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .deck {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 24px;
+    }
+    .slide {
+      width: min(1280px, 100%);
+      aspect-ratio: 16 / 9;
+      margin: 0 auto;
+      background: var(--slide-bg);
+      color: var(--fg);
+      border-radius: var(--radius);
+      box-sizing: border-box;
+      padding: var(--pad);
+      overflow: hidden;
+      position: relative;
+    }
+    .meta {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    h1 { font-size: 56px; margin: 0 0 14px; }
+    h2 { font-size: 42px; margin: 0 0 18px; }
+    p  { font-size: 22px; line-height: 1.35; margin: 0; }
+    ul { font-size: 26px; line-height: 1.25; margin: 0; padding-left: 28px; }
+    li { margin: 8px 0; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 32px;
+      height: 100%;
+    }
+    .visual-box {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 18px;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .label {
+      font-size: 14px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip {
+      font-size: 14px;
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #333;
+      background: #fafafa;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="deck">
+
+    <!-- Optional intro slide (derived from learning objectives) -->
+    <section class="slide">
+      <h1>Learning Objectives</h1>
+      <ul>
+        {% for obj in deck.learning_objectives %}
+          <li>{{ obj }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if deck.prerequisites %}
+        <div style="margin-top:22px">
+          <div class="label">Prerequisites</div>
+          <div class="chips">
+            {% for p in deck.prerequisites %}
+              <span class="chip">{{ p }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="meta">
+        Total duration: {{ deck.total_duration_sec }}s
+      </div>
+    </section>
+
+    {% for s in deck.slides %}
+      <section class="slide">
+
+        {% if s.layout == "title" %}
+          <h1>{{ s.title }}</h1>
+          <p style="color: var(--muted); font-size: 26px;">
+            {{ s.visual_plan }}
+          </p>
+
+        {% elif s.layout == "content" %}
+          <h2>{{ s.title }}</h2>
+          <ul>
+            {% for b in s.bullets %}
+              <li>{{ b }}</li>
+            {% endfor %}
+          </ul>
+          <div style="margin-top:22px">
+            <div class="label">Visual plan{% if s.diagram_type %} ({{ s.diagram_type }}){% endif %}</div>
+            <p style="color: var(--muted)">{{ s.visual_plan }}</p>
+          </div>
+
+        {% elif s.layout == "split" %}
+          <div class="two-col">
+            <div>
+              <h2>{{ s.title }}</h2>
+              <ul>
+                {% for b in s.bullets %}
+                  <li>{{ b }}</li>
+                {% endfor %}
+              </ul>
+
+              {% if s.key_terms %}
+                <div class="chips">
+                  {% for t in s.key_terms %}
+                    <span class="chip">{{ t }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="visual-box">
+              <div class="label">
+                Visual{% if s.diagram_type %} ({{ s.diagram_type }}){% endif %}
+                • priority: {{ s.visual_priority }}
+              </div>
+              <p>{{ s.visual_plan }}</p>
+            </div>
+          </div>
+
+        {% elif s.layout == "full-visual" %}
+          <h2>{{ s.title }}</h2>
+          <div class="visual-box" style="margin-top: 18px;">
+            <div class="label">
+              Full Visual{% if s.diagram_type %} ({{ s.diagram_type }}){% endif %}
+            </div>
+            <p style="font-size: 26px;">{{ s.visual_plan }}</p>
+          </div>
+
+        {% else %}
+          <h2>{{ s.title }}</h2>
+          <p>Unknown layout: {{ s.layout }}</p>
+        {% endif %}
+
+        <div class="meta">
+          {{ s.duration_sec }}s
+          {% if s.audio_emphasis %} • emphasis: {{ s.audio_emphasis|join(", ") }}{% endif %}
+        </div>
+      </section>
+    {% endfor %}
+
+  </div>
+</body>
+</html>

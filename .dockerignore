@@ -1,0 +1,71 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Test outputs and generated files
+test_output/
+generated_outputs/
+*.html
+*.wav
+*.mp3
+
+# Documentation (keep essential docs)
+# README.md is needed, but exclude test/dev docs
+CONTRIBUTING.md
+.github/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+
+# Environment files (secrets should be set in HF Spaces settings)
+.env
+.env.local
+.env.*.local
+
+# Model cache (will be downloaded on first run)
+models/
+.cache/
+huggingface/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test*.py
+verify*.py
+cross_validation.py
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

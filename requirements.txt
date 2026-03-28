@@ -1,0 +1,44 @@
+# Core dependencies
+pydantic>=2.0.0
+transformers>=4.30.0
+torch>=2.0.0
+accelerate>=0.20.0  # Required for device_map="auto"
+typing-extensions>=4.5.0
+
+# API server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+requests>=2.31.0  # For test client
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Rendering dependencies
+jinja2>=3.1.0
+
+# Audio rendering (open source, offline)
+pyttsx3>=2.90
+pydub>=0.25.0
+
+# Diagram rendering (matplotlib for fallback, primary is Mermaid via API)
+matplotlib>=3.7.0
+
+# Optional: PowerPoint slide export
+# python-pptx>=0.6.21
+
+# Optional: High-quality TTS engines (online)
+# gtts>=2.3.0
+# edge-tts>=6.1.0
+
+# ============================================
+# LLM Provider Dependencies
+# ============================================
+
+# Local inference (Mistral 7B) - Always included
+# transformers, torch, accelerate already listed above
+
+# Together AI (Llama 3.3 70B) - Optional, install if using API
+# Uncomment to use Together AI:
+# langchain-together>=0.1.0
+
+# Note: No need for openai, anthropic packages - we only support local + Together

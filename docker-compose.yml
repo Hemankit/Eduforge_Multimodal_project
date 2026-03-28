@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  eduforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:7860"  # Map local 8000 to container 7860
+    environment:
+      # LLM Provider Configuration
+      - LLM_PROVIDER=${LLM_PROVIDER:-auto}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - LLM_FALLBACK_CHAIN=${LLM_FALLBACK_CHAIN:-}
+      
+      # API Keys (load from .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY}
+      
+      # Server Configuration
+      - PORT=7860
+      - HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+    
+    volumes:
+      # Mount generated outputs for persistence
+      - ./generated_outputs:/app/generated_outputs
+      # Mount logs for debugging
+      - ./logs:/app/logs
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Optional: Add a reverse proxy for production
+# nginx:
+#   image: nginx:alpine
+#   ports:
+#     - "80:80"
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#   depends_on:
+#     - eduforge
+#   restart: unless-stopped
