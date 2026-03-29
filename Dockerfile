@@ -25,8 +25,14 @@ RUN pip install --no-cache-dir langchain-together>=0.1.0
 # Copy application code
 COPY . .
 
-# Debug: List Python files to verify they're copied
-RUN echo "=== Python files in /app ===" && ls -la *.py && echo "=== Done ===" 
+# Debug: Verify critical files are present
+RUN echo "=== Checking for Python modules ===" && \
+    ls -la *.py | head -20 && \
+    echo "=== Checking cross_validation.py specifically ===" && \
+    ls -la cross_validation.py && \
+    echo "=== Testing import ===" && \
+    python -c "import cross_validation; print('✅ cross_validation imports OK')" && \
+    echo "=== Done ==="
 
 # Create necessary directories
 RUN mkdir -p generated_outputs
