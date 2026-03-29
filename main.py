@@ -124,6 +124,36 @@ def get_llm_client() -> LLMClient:
     return llm_client
 
 
+@app.get("/")
+async def root():
+    """Welcome page with API information."""
+    return {
+        "name": "EduForge - Educational Content Generator",
+        "version": "2.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "/health - Check system status",
+            "generate": "/generate - Generate educational content (POST)",
+            "docs": "/docs - Interactive API documentation",
+            "openapi": "/openapi.json - OpenAPI schema"
+        },
+        "usage": {
+            "example": {
+                "topic": "Binary Search Algorithm",
+                "llm_provider": "together",
+                "together_api_key": "your_api_key_here"
+            },
+            "get_api_key": "https://api.together.xyz/"
+        },
+        "features": [
+            "Multi-modal content generation (slides, diagrams, audio)",
+            "Two LLM modes: Local (Mistral 7B) or API (Llama 3.3 70B)",
+            "User-provided API keys (no billing to Space owner)",
+            "Schema validation and cross-validation"
+        ]
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint with provider information."""
