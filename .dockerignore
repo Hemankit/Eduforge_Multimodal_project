@@ -57,13 +57,12 @@ models/
 .cache/
 huggingface/
 
-# Testing
+# Testing - exclude test files but keep cross_validation.py (it's needed!)
 .pytest_cache/
 .coverage
 htmlcov/
 test*.py
 verify*.py
-cross_validation.py
 
 # Build artifacts
 dist/
