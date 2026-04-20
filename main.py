@@ -2,13 +2,14 @@
 FastAPI-based orchestration for educational content generation pipeline.
 
 Endpoints:
-- POST /generate - Generate content from topic/audience/constraints
-- GET /outputs/{filename} - Download generated files
+- GET / - Basic service info
 - GET /health - Health check
+- POST /generate - Generate content
+- GET /outputs/{session_id}/{filename} - Download files
+- GET /sessions - List sessions
 """
 from datetime import datetime
 import logging
-import os
 from pathlib import Path
 import traceback
 from typing import Optional, List, Dict, Any
@@ -33,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="EduForge - Educational Content Generator",
-    description="AI-powered multimodal educational content generation. Supports local (Mistral 7B) and API (Llama 3.3 70B) inference.",
     version="2.0.0"
 )
 
@@ -45,7 +45,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-llm_client: Optional[LLMClient] = None
 OUTPUT_DIR = Path("generated_outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -72,14 +71,14 @@ class GenerateResponse(BaseModel):
     generation_time_sec: Optional[float] = None
 
 
-# ✅ HEALTH ENDPOINT (added)
+@app.get("/")
+async def root():
+    return {"status": "running", "service": "EduForge"}
+
+
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "service": "EduForge",
-        "timestamp": datetime.now().isoformat()
-    }
+    return {"status": "healthy"}
 
 
 @app.post("/generate", response_model=GenerateResponse)
@@ -104,49 +103,42 @@ async def generate_content(request: GenerateRequest):
         if request.llm_provider == "together" and not request.together_api_key:
             raise HTTPException(status_code=400, detail="Missing Together API key")
 
-        create_kwargs = {
-            "provider": request.llm_provider,
-            "fallback_to_local": False
-        }
-        if request.llm_provider == "together":
-            create_kwargs["api_key"] = request.together_api_key
+        client = LLMClient.create(
+            provider=request.llm_provider,
+            api_key=request.together_api_key,
+            fallback_to_local=False
+        )
 
-        client = LLMClient.create(**create_kwargs)
-        generator = ContentGenerator(llm_client=client, valid_input=content_input, prompt=prompt)
+        generator = ContentGenerator(client, content_input, prompt)
         content_output = generator.generate_with_repair()
 
         is_valid, errors = CrossValidator.validate(content_input, content_output)
 
-        generated_files: Dict[str, Any] = {}
+        generated_files = {}
 
         session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         session_dir = OUTPUT_DIR / session_id
         session_dir.mkdir(exist_ok=True)
 
         if "slides" in request.render_formats:
-            renderer = slide_renderer.SlideRenderer(output_dir=str(session_dir))
-            slide_file = renderer.render(content_output, format=request.slide_format)
+            slide_file = slide_renderer.SlideRenderer(str(session_dir)).render(content_output)
             generated_files["slides"] = f"/outputs/{session_id}/{slide_file.name}"
 
         if "diagrams" in request.render_formats:
-            renderer = diagram_renderer.DiagramRenderer(output_dir=str(session_dir))
-            diagram_files = renderer.render(content_output)
-            generated_files["diagrams"] = [f"/outputs/{session_id}/{f.name}" for f in diagram_files]
+            files = diagram_renderer.DiagramRenderer(str(session_dir)).render(content_output)
+            generated_files["diagrams"] = [f"/outputs/{session_id}/{f.name}" for f in files]
 
         if "audio" in request.render_formats:
-            renderer = audio_renderer.AudioRenderer(output_dir=str(session_dir))
-            audio_files = renderer.render(content_output)
-            generated_files["audio"] = [f"/outputs/{session_id}/{f.name}" for f in audio_files]
-
-        generation_time = (datetime.now() - start_time).total_seconds()
+            files = audio_renderer.AudioRenderer(str(session_dir)).render(content_output)
+            generated_files["audio"] = [f"/outputs/{session_id}/{f.name}" for f in files]
 
         return GenerateResponse(
             success=True,
-            message=f"Content generated in {generation_time:.2f}s",
+            message="Generated successfully",
             content_output=content_output.model_dump(),
             generated_files=generated_files,
             validation_warnings=errors if not is_valid else None,
-            generation_time_sec=generation_time
+            generation_time_sec=(datetime.now() - start_time).total_seconds()
         )
 
     except HTTPException:
@@ -154,3 +146,21 @@ async def generate_content(request: GenerateRequest):
     except Exception as e:
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/outputs/{session_id}/{filename}")
+async def download_file(session_id: str, filename: str):
+    path = OUTPUT_DIR / session_id / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path)
+
+
+@app.get("/sessions")
+async def sessions():
+    data = []
+    for d in OUTPUT_DIR.iterdir():
+        if d.is_dir():
+            files = list(d.glob("*"))
+            data.append({"session_id": d.name, "file_count": len(files)})
+    return {"sessions": data}
