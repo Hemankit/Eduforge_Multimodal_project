@@ -1,13 +1,3 @@
----
-title: Eduforge
-emoji: 🎓
-colorFrom: pink
-colorTo: blue
-sdk: docker
-pinned: false
-short_description: Multimodal AI content generator with LLM switching
----
-
 # 🎓 EduForge - Multimodal Educational Content Generator
 
 A deterministic, multimodal pipeline that converts structured text into synchronized educational artifacts (slides, diagrams, audio) with validation between modalities.
@@ -104,16 +94,6 @@ docker run -d \
 # View logs
 docker logs -f eduforge
 ```
-
-### Option 3: Hugging Face Spaces (Cloud Deployment)
-
-**Users provide their own API keys** - no billing for the Space owner!
-
-This Space supports two modes:
-- **Together AI** (Llama 3.3 70B): Users provide API key in request
-- **Local** (Mistral 7B): Free, no key needed
-
-See [README_HF.md](README_HF.md) for detailed HF Spaces deployment guide.
 
 ## 🏗️ Architecture
 

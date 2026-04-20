@@ -1,6 +1,6 @@
 #!/bin/bash
 # EduForge Docker - Local Testing Script
-# Run this script to build and test Docker container locally before deploying to HF Spaces
+# Run this script to build and test Docker container locally before deploying
 
 set -e
 

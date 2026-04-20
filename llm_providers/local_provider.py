@@ -12,7 +12,11 @@ from .base_provider import BaseLLMProvider, LLMResponse
 class LocalProvider(BaseLLMProvider):
     """Provider for local model inference using HuggingFace transformers"""
     
-    DEFAULT_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
+    # Use a smaller model on CPU to actually fit in memory and run in reasonable time
+    # Mistral 7B float32 = ~28GB (too large for 32GB with overhead)
+    # Phi-2 (2.7B) float32 = ~11GB — fast and fits easily
+    DEFAULT_MODEL_GPU = "mistralai/Mistral-7B-Instruct-v0.3"
+    DEFAULT_MODEL_CPU = "microsoft/phi-2"
     
     def __init__(self, model: Optional[str] = None, **kwargs):
         """
@@ -22,35 +26,52 @@ class LocalProvider(BaseLLMProvider):
             model: HuggingFace model ID
             **kwargs: Additional config (device_map, torch_dtype, etc.)
         """
-        super().__init__(model or self.DEFAULT_MODEL, **kwargs)
+        super().__init__(model or self._default_model(), **kwargs)
         self._model = None
         self._tokenizer = None
         # Don't load model immediately - load on first use for lazy initialization
+    
+    @classmethod
+    def _default_model(cls):
+        """Pick default model based on available hardware"""
+        if torch.cuda.is_available():
+            return cls.DEFAULT_MODEL_GPU
+        return cls.DEFAULT_MODEL_CPU
     
     def _load_model(self):
         """Load model and tokenizer from HuggingFace"""
         if self._model is not None:
             return  # Already loaded
         
-        print(f"Loading local model: {self.model}")
-        print("This may take 2-3 minutes...")
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Loading local model: {self.model}")
+        logger.info("This may take a few minutes on first load (downloading weights)...")
         
         self._tokenizer = AutoTokenizer.from_pretrained(self.model)
         
-        # Handle deprecated torch_dtype parameter
-        torch_dtype = self.config.get('torch_dtype', torch.float16)
-        if 'torch_dtype' in self.config:
-            torch_dtype = self.config.get('dtype', torch_dtype)
+        # Select dtype based on hardware
+        has_gpu = torch.cuda.is_available()
+        if has_gpu:
+            torch_dtype = self.config.get('torch_dtype', torch.float16)
+            device_map = self.config.get('device_map', 'auto')
+        else:
+            # bfloat16 is natively supported on modern CPUs and uses half the memory of float32
+            torch_dtype = torch.bfloat16
+            device_map = None  # CPU only — don't use accelerate device_map
+            logger.info(f"No GPU detected — loading model in bfloat16 for CPU inference")
         
         self._model = AutoModelForCausalLM.from_pretrained(
             self.model,
             torch_dtype=torch_dtype,
-            device_map=self.config.get('device_map', 'auto'),
+            device_map=device_map,
+            low_cpu_mem_usage=True,
             **{k: v for k, v in self.config.items() 
                if k not in ['torch_dtype', 'dtype', 'device_map']}
         )
         
-        print(f"✅ Model loaded successfully on {self._model.device}")
+        logger.info(f"✅ Model loaded successfully on {self._model.device}")
     
     def generate(
         self, 

@@ -47,7 +47,7 @@ desktop.ini
 # Logs
 *.log
 
-# Environment files (secrets should be set in HF Spaces settings)
+# Environment files (secrets should be set via env vars)
 .env
 .env.local
 .env.*.local

@@ -1,5 +1,4 @@
-# Dockerfile for Hugging Face Spaces deployment
-# Updated: 2026-03-28 - Force rebuild to fix module import
+# Dockerfile for EduForge deployment
 FROM python:3.10-slim
 
 # Set working directory
@@ -37,15 +36,12 @@ RUN echo "=== Checking for Python modules ===" && \
 # Create necessary directories
 RUN mkdir -p generated_outputs
 
-# Set environment variables for Hugging Face Spaces
+# Set environment variables
 ENV PORT=7860
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 
-# No API key required at deployment level!
-# Users provide their own API keys in requests to avoid billing the Space owner
-
-# Expose the port that Hugging Face Spaces expects
+# Expose the application port
 EXPOSE 7860
 
 # Health check

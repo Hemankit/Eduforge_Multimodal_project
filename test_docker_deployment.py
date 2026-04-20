@@ -167,11 +167,11 @@ def main():
     print(f"\n{passed_tests}/{total_tests} tests passed")
     
     if passed_tests == total_tests:
-        print("\n🎉 All tests passed! Your Docker deployment is ready for Hugging Face Spaces!")
+        print("\n🎉 All tests passed! Your Docker deployment is ready!")
         print("\n📝 Next steps:")
         print("   1. Review the deployment checklist: DEPLOYMENT_CHECKLIST.md")
         print("   2. Follow the deployment guide: HF_DEPLOYMENT_GUIDE.md")
-        print("   3. Push to Hugging Face Spaces")
+        print("   3. Deploy to your cloud platform")
         sys.exit(0)
     else:
         print("\n⚠️  Some tests failed. Please check the errors above.")

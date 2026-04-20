@@ -210,14 +210,7 @@ async def generate_content(request: GenerateRequest):
         prompt = build_prompt(content_input, include_few_shot=request.include_few_shot)
         logger.info(f"Prompt built: {len(prompt)} characters")
         
-        # Step 3: Validate provider choice and API key
-        if request.llm_provider == "local":
-            import torch
-            if not torch.cuda.is_available():
-                logger.warning(
-                    "No GPU detected — local model will run on CPU. "
-                    "This may be slow for large generation requests."
-                )
+        # Step 3: Validate API key for Together AI provider
         if request.llm_provider == "together" and not request.together_api_key:
             raise HTTPException(
                 status_code=400,
