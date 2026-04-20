@@ -72,6 +72,16 @@ class GenerateResponse(BaseModel):
     generation_time_sec: Optional[float] = None
 
 
+# ✅ HEALTH ENDPOINT (added)
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "EduForge",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_content(request: GenerateRequest):
     start_time = datetime.now()
