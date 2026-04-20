@@ -67,7 +67,7 @@ class GenerateRequest(BaseModel):
     optimize_for_format: bool = True
     include_few_shot: bool = False
     llm_provider: str = "together"  # "local" or "together"
-    together_api_key: Optional[str] = None  # User's Together AI API key (required if provider=together)
+    together_api_key: Optional[str] = None  # Only required if llm_provider="together". NOT needed for local models.
     
     class Config:
         json_schema_extra = {
@@ -218,13 +218,17 @@ async def generate_content(request: GenerateRequest):
                        "Get your free key at https://api.together.xyz/"
             )
         
-        # Step 4: Create LLM client with user's API key
+        # Step 4: Create LLM client with user's API key (only for API providers)
         logger.info(f"Creating LLM client with provider: {request.llm_provider}")
-        client = LLMClient.create(
-            provider=request.llm_provider,
-            api_key=request.together_api_key,
-            fallback_to_local=False  # No fallback - use what user specified
-        )
+        create_kwargs = {
+            "provider": request.llm_provider,
+            "fallback_to_local": False  # No fallback - use what user specified
+        }
+        # Only pass API key for Together AI provider, not for local
+        if request.llm_provider == "together":
+            create_kwargs["api_key"] = request.together_api_key
+        
+        client = LLMClient.create(**create_kwargs)
         
         # Step 5: Generate content with LLM
         logger.info("Generating content with LLM...")
