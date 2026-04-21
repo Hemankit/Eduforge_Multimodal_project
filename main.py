@@ -4,6 +4,7 @@ FastAPI-based orchestration for educational content generation pipeline.
 Endpoints:
 - GET / - Basic service info
 - GET /health - Health check
+- GET /debug/runtime - Runtime and GPU diagnostics
 - POST /generate - Generate content
 - GET /outputs/{session_id}/{filename} - Download files
 - GET /sessions - List sessions
@@ -79,6 +80,32 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/debug/runtime")
+async def debug_runtime():
+    runtime: Dict[str, Any] = {
+        "service": "EduForge",
+        "timestamp": datetime.now().isoformat(),
+    }
+
+    try:
+        import torch
+        runtime["torch_version"] = torch.__version__
+        runtime["cuda_available"] = torch.cuda.is_available()
+        runtime["cuda_version"] = torch.version.cuda
+        runtime["cuda_device_count"] = torch.cuda.device_count()
+        runtime["cuda_device_name"] = torch.cuda.get_device_name(0) if torch.cuda.is_available() and torch.cuda.device_count() > 0 else None
+    except Exception as e:
+        runtime["torch_error"] = str(e)
+
+    try:
+        from llm_providers.local_provider import LocalProvider
+        runtime["local_provider_default_model"] = LocalProvider().model
+    except Exception as e:
+        runtime["local_provider_error"] = str(e)
+
+    return runtime
 
 
 @app.post("/generate", response_model=GenerateResponse)
