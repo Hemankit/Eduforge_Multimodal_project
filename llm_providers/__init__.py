@@ -1,16 +1,20 @@
 """
-LLM Provider System - Simple switching between local and API-based inference.
+LLM Provider System - Simple switching between local, API-based, and remote GPU inference.
 
 Supports:
-- Local inference (Mistral 7B via Transformers) - Free, runs on GPU
-- Together AI (Llama 3.3 70B via API) - Paid, cloud-hosted
+- Local inference (Mistral 7B / Phi-2 via Transformers)
+- Together AI (cloud-hosted API)
+- Remote GPU inference (RunPod-hosted Mistral)
 """
-from .base_provider import BaseLLMProvider
+from .base_provider import BaseLLMProvider, LLMResponse
 from .local_provider import LocalProvider
 from .together_provider import TogetherProvider
+from .remote_gpu_provider import RemoteGPUProvider
 
 __all__ = [
-    'BaseLLMProvider',
-    'LocalProvider',
-    'TogetherProvider',
+    "BaseLLMProvider",
+    "LLMResponse",
+    "LocalProvider",
+    "TogetherProvider",
+    "RemoteGPUProvider",
 ]
