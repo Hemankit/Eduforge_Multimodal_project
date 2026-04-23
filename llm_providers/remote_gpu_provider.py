@@ -58,6 +58,9 @@ class RemoteGPUProvider(BaseLLMProvider):
         start = time.time()
         last_error = None
 
+        # Keep generation bounded for hosted 7B inference stability.
+        max_tokens = min(max_tokens, 800)
+
         for attempt in range(self.max_retries):
             try:
                 response = requests.post(

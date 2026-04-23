@@ -18,12 +18,14 @@ class ContentGenerator:
 
     def generate_content(self) -> ContentOutput:
         """Generate content using the llm client, then validate and parse the output"""
-        output_text = self.llm_client.generate_content(self.prompt)
-
-        json_str = self._extract_json(output_text)
+        output_text = self.llm_client.generate_content(
+            self.prompt,
+            max_tokens=800,
+            temperature=0.1,
+        )
 
         try:
-            output_data = json.loads(json_str)
+            output_data = self.llm_client._parse_json_response(output_text)
             validated_output = ContentOutput.model_validate(output_data)
             return validated_output
         except (json.JSONDecodeError, ValidationError) as e:
@@ -31,11 +33,14 @@ class ContentGenerator:
 
     def generate_with_repair(self) -> ContentOutput:
         """Generate content with automatic repair on validation failure"""
-        output_text = self.llm_client.generate_content(self.prompt)
-        json_str = self._extract_json(output_text)
+        output_text = self.llm_client.generate_content(
+            self.prompt,
+            max_tokens=800,
+            temperature=0.1,
+        )
 
         try:
-            output_data = json.loads(json_str)
+            output_data = self.llm_client._parse_json_response(output_text)
             return ContentOutput.model_validate(output_data)
         except (json.JSONDecodeError, ValidationError):
             return self.llm_client.repair_loop(

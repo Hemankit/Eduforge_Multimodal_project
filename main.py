@@ -125,7 +125,13 @@ async def generate_content(request: GenerateRequest):
             )
         )
 
-        prompt = build_prompt(content_input, include_few_shot=request.include_few_shot)
+        # Avoid sending full JSON Schema to weaker instruction-following models,
+        # which can cause schema echo responses instead of concrete JSON instances.
+        prompt = build_prompt(
+            content_input,
+            include_schema=False,
+            include_few_shot=request.include_few_shot,
+        )
 
         if request.llm_provider == "together" and not request.together_api_key:
             raise HTTPException(status_code=400, detail="Missing Together API key")

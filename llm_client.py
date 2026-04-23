@@ -80,15 +80,28 @@ class LLMClient:
             except (json.JSONDecodeError, ValidationError) as e:
                 logger.warning(f"Validation failed (attempt {attempt + 1}/{max_retries}): {e}")
 
+                # Keep repair prompts compact to reduce upstream timeout/500 risk.
+                response_excerpt = response[:4000]
+                error_excerpt = str(e)[:1200]
+
                 repair_prompt = f"""
 Fix the JSON so it matches the schema and constraints.
 Return ONLY corrected JSON.
 
+IMPORTANT:
+- Return a JSON INSTANCE with concrete values, not a JSON Schema.
+- Do NOT include keys like $defs, properties, required, title, or type.
+- Ensure required top-level fields exist: learning_objectives, sections.
+- If there is trailing text after JSON, remove it.
+- Replace placeholder values like "...", "TBD", "N/A", and empty strings with concrete content.
+- Respect minimum lengths: learning objective >= 10 chars, title >= 5,
+  script >= 50, visual_plan >= 10.
+
 Invalid JSON:
-{response}
+{response_excerpt}
 
 Errors:
-{str(e)}
+{error_excerpt}
 """
                 response = self.generate_content(repair_prompt)
 
@@ -111,11 +124,24 @@ Errors:
             candidates.append(response[first_brace:last_brace + 1].strip())
 
         last_error: Optional[Exception] = None
+        decoder = json.JSONDecoder()
         for candidate in candidates:
             try:
-                return json.loads(candidate)
+                parsed = json.loads(candidate)
+                # Guard against schema echo payloads that are valid JSON but invalid output data.
+                if isinstance(parsed, dict) and any(k in parsed for k in ("$defs", "properties", "required")):
+                    raise json.JSONDecodeError("Schema JSON detected instead of content JSON", candidate, 0)
+                return parsed
             except json.JSONDecodeError as e:
-                last_error = e
+                # Fallback: parse first valid JSON value and ignore trailing text.
+                try:
+                    parsed, _ = decoder.raw_decode(candidate)
+                    if isinstance(parsed, dict) and any(k in parsed for k in ("$defs", "properties", "required")):
+                        raise json.JSONDecodeError("Schema JSON detected instead of content JSON", candidate, 0)
+                    return parsed
+                except json.JSONDecodeError as raw_e:
+                    last_error = raw_e
+                    continue
 
         if last_error:
             raise last_error

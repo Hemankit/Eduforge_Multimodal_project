@@ -33,6 +33,35 @@ def build_prompt(
         prompt_parts.append("```json\n")
         prompt_parts.append(schema_json)
         prompt_parts.append("\n```\n\n")
+    else:
+        prompt_parts.append(
+            "Return a JSON object with this exact top-level structure (fill with real values):\n\n"
+        )
+        prompt_parts.append(
+            """{
+    "learning_objectives": [
+        "Explain what gradient descent optimizes in machine learning",
+        "Describe how step size affects convergence behavior"
+    ],
+    "sections": [
+        {
+            "title": "What Gradient Descent Is",
+            "script": "Gradient descent is an iterative optimization method that updates parameters in the direction that most reduces error. Each step uses the gradient to estimate the steepest downhill direction, helping us gradually approach a minimum of the loss function.",
+            "visual_plan": "Show a bowl-shaped loss curve with a point moving downhill in small steps toward the minimum.",
+            "duration_sec": 30,
+            "key_terms": ["gradient", "loss function", "learning rate"],
+            "slide_layout": "content",
+            "diagram_type": "flowchart",
+            "mermaid_source": "flowchart TD; A[Start parameters]-->B[Compute gradient]; B-->C[Update parameters]; C-->D[Compute new loss]; D-->B;",
+            "audio_emphasis": ["gradient", "step size", "minimum"],
+            "visual_priority": "medium"
+        }
+    ],
+    "total_duration_sec": 30,
+    "prerequisites": ["Basic algebra", "Functions and graphs"],
+    "recommended_formats": ["slides", "diagrams"]
+}\n\n"""
+        )
     
     audience_instructions = {
         "beginner": "Use simple language, relatable examples, and avoid technical jargon. Define any necessary terms immediately.",
@@ -56,6 +85,12 @@ CRITICAL OUTPUT REQUIREMENTS:
 - DO NOT omit any required fields.
 - If a field is required in the schema, you MUST include it.
 - If unsure about a value, provide a reasonable placeholder — NEVER omit fields.
+- Return a JSON INSTANCE (actual lesson data), not a JSON Schema.
+- DO NOT output schema keys like: $defs, properties, required, title, type.
+- DO NOT use placeholder tokens such as "...", "TBD", "N/A", or empty strings.
+- Enforce minimum content lengths:
+    learning_objectives entries >= 10 chars, title >= 5 chars,
+    script >= 50 chars, visual_plan >= 10 chars.
 
 FAILURE TO FOLLOW THESE RULES WILL BREAK THE SYSTEM.
 
