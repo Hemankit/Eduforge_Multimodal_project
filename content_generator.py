@@ -31,10 +31,17 @@ class ContentGenerator:
 
     def generate_with_repair(self) -> ContentOutput:
         """Generate content with automatic repair on validation failure"""
-        return self.llm_client.repair_loop(
-            prompt=self.prompt,
-            output_model=ContentOutput
-        )
+        output_text = self.llm_client.generate_content(self.prompt)
+        json_str = self._extract_json(output_text)
+
+        try:
+            output_data = json.loads(json_str)
+            return ContentOutput.model_validate(output_data)
+        except (json.JSONDecodeError, ValidationError):
+            return self.llm_client.repair_loop(
+                prompt=self.prompt,
+                output_model=ContentOutput
+            )
 
     def _extract_json(self, text: str) -> str:
         """Extract JSON from text that might contain extra content"""
