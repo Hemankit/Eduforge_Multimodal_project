@@ -27,4 +27,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD sh -c 'python -c "import os, requests; requests.get(f\"http://localhost:{os.getenv(\"PORT\", \"8000\")}/health\", timeout=5)"'
 
-CMD uvicorn main:app --host ${HOST} --port ${PORT} --log-level info
+CMD ["sh", "-c", "uvicorn main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000} --log-level info"]
