@@ -44,10 +44,14 @@ class LLMClient:
                 self.total_cost += response.cost_usd or 0.0
                 self.total_tokens += response.tokens_used or 0
 
+                tokens_display = response.tokens_used if response.tokens_used is not None else "n/a"
+                latency_display = f"{response.latency_ms:.0f}ms" if response.latency_ms is not None else "n/a"
+                cost_display = f"${response.cost_usd:.4f}" if response.cost_usd is not None else "n/a"
+
                 logger.info(
                     f"✅ Generation successful | Provider: {response.provider} | "
-                    f"Model: {response.model} | Tokens: {response.tokens_used} | "
-                    f"Latency: {response.latency_ms:.0f}ms | Cost: ${response.cost_usd:.4f}"
+                    f"Model: {response.model} | Tokens: {tokens_display} | "
+                    f"Latency: {latency_display} | Cost: {cost_display}"
                 )
 
                 return response.content
