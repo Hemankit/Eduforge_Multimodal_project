@@ -46,8 +46,8 @@ class RemoteGPUProvider(BaseLLMProvider):
     def generate(
         self,
         prompt: str,
-        max_tokens: int = 4096,
-        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        temperature: float = 0.1,
     ) -> LLMResponse:
         if not self.is_available():
             raise RuntimeError(
@@ -74,16 +74,14 @@ class RemoteGPUProvider(BaseLLMProvider):
                     timeout=self.timeout_sec,
                 )
 
-                # Check for HTTP errors with detailed message
                 if response.status_code >= 400:
                     error_body = response.text[:500] if response.text else "<empty response>"
                     error_msg = (
                         f"Remote GPU request failed with status {response.status_code}: {error_body}"
                     )
-                    
-                    # Retry on 5xx errors (server/proxy issues)
+
                     if response.status_code >= 500 and attempt < self.max_retries - 1:
-                        wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                        wait_time = 2 ** attempt
                         logger.warning(
                             f"RunPod returned {response.status_code}, retrying in {wait_time}s "
                             f"(attempt {attempt + 1}/{self.max_retries})..."
@@ -91,14 +89,34 @@ class RemoteGPUProvider(BaseLLMProvider):
                         time.sleep(wait_time)
                         last_error = RuntimeError(error_msg)
                         continue
-                    
+
                     raise RuntimeError(error_msg)
 
                 data = response.json()
                 text = data.get("text") or data.get("generated_text")
-                
+
                 if not text:
                     raise RuntimeError(f"Remote GPU response missing text field: {data}")
+
+                text = text.strip()
+
+                if text.startswith("```json"):
+                    text = text[7:].strip()
+                elif text.startswith("```"):
+                    text = text[3:].strip()
+
+                if text.endswith("```"):
+                    text = text[:-3].strip()
+
+                prefixes = [
+                    "Here is the JSON:",
+                    "Here is the corrected JSON:",
+                    "Sure, here is the JSON:",
+                    "Sure — here is the JSON:",
+                ]
+                for prefix in prefixes:
+                    if text.startswith(prefix):
+                        text = text[len(prefix):].strip()
 
                 latency_ms = (time.time() - start) * 1000
 
@@ -112,7 +130,6 @@ class RemoteGPUProvider(BaseLLMProvider):
                 )
 
             except RequestException as e:
-                # Retry on network errors
                 if attempt < self.max_retries - 1:
                     wait_time = 2 ** attempt
                     logger.warning(
@@ -124,7 +141,6 @@ class RemoteGPUProvider(BaseLLMProvider):
                     continue
                 raise RuntimeError(f"Remote GPU network error after {self.max_retries} attempts: {e}")
 
-        # If we exhausted retries
         if last_error:
             raise last_error
         raise RuntimeError("Remote GPU request failed after retries")
