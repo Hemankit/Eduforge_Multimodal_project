@@ -8,6 +8,7 @@ Providers:
 """
 import json
 import logging
+import re
 from typing import Optional, List, Type, TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -74,7 +75,7 @@ class LLMClient:
 
         for attempt in range(max_retries):
             try:
-                data = json.loads(response)
+                data = self._parse_json_response(response)
                 return output_model.model_validate(data)
             except (json.JSONDecodeError, ValidationError) as e:
                 logger.warning(f"Validation failed (attempt {attempt + 1}/{max_retries}): {e}")
@@ -94,6 +95,31 @@ Errors:
         raise RuntimeError(
             f"Failed to produce valid structured output for {output_model.__name__} after repair attempts"
         )
+
+    def _parse_json_response(self, response: str) -> dict:
+        """Parse JSON with tolerance for fenced code blocks and extra prose."""
+        candidates = [response.strip()]
+
+        # Try extracting from markdown code fences first.
+        fenced_matches = re.findall(r"```(?:json)?\s*(.*?)\s*```", response, flags=re.DOTALL | re.IGNORECASE)
+        candidates.extend(match.strip() for match in fenced_matches if match.strip())
+
+        # Try a substring between the first "{" and last "}".
+        first_brace = response.find("{")
+        last_brace = response.rfind("}")
+        if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
+            candidates.append(response[first_brace:last_brace + 1].strip())
+
+        last_error: Optional[Exception] = None
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError as e:
+                last_error = e
+
+        if last_error:
+            raise last_error
+        raise json.JSONDecodeError("No JSON candidate found", response, 0)
 
     def get_stats(self) -> dict:
         return {
